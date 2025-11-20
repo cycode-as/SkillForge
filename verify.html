@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Verify - Career Architect</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+    <div class="container center-screen">
+        <div class="card auth-card">
+            <h1>SECURITY CHECK</h1>
+            <p class="subtitle">Enter the code sent to your terminal.</p>
+
+            <form action="/check_otp" method="POST">
+                <input type="text" name="otp" placeholder="Enter 4-Digit OTP" maxlength="4"
+                    style="text-align:center; letter-spacing: 10px; font-size: 1.5rem; text-transform: uppercase;" required
+                    aria-label="Enter 4-Digit OTP">
+                <button type="submit" class="analyze-btn">AUTHENTICATE</button>
+            </form>
+            <p style="margin-top:var(--spacing-md); font-size: 0.9rem; color:var(--color-text-sub); font-weight: 300;">
+                (Check your VS Code Terminal for the code)
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

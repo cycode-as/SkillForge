@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Login - Career Architect</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+    <div class="container center-screen">
+        <div class="card auth-card">
+            <h1>Login Page</h1>
+            <p class="subtitle">Enter credentials</p>
+
+            <form action="/send_otp" method="POST">
+                <input type="text" name="name" placeholder="Full Name" required aria-label="Full Name">
+                <input type="number" name="age" placeholder="Age" required aria-label="Age">
+                <select name="gender" required aria-label="Select Gender">
+                    <option value="" disabled selected>Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+                <input type="text" name="contact" placeholder="Contact Number" required aria-label="Contact Number">
+                <input type="email" name="email" placeholder="Email Address" required aria-label="Email Address">
+
+                <button type="submit" class="analyze-btn">SEND OTP</button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

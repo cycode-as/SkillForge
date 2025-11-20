@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Career Architect</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <div class="container">
+      <header style="margin-top: var(--spacing-xl);">
+        <div class="badge">AI ANALYTICS ENGINE</div>
+        <h1>JOB MATCH DASHBOARD</h1>
+      </header>
+
+      <div class="input-section">
+        <div class="card input-card">
+          <div class="card-header">
+            <i class="fas fa-file-pdf"></i> <span>UPLOAD RESUME</span>
+          </div>
+          <div class="file-upload-wrapper">
+            <input type="file" id="resumeFile" accept=".pdf" hidden />
+            <label for="resumeFile" class="file-upload-label" aria-label="Upload Resume PDF Only"
+              ><i class="fas fa-cloud-upload-alt"></i> PDF Only</label
+            >
+            <span id="fileName" class="file-name">No file selected</span>
+          </div>
+        </div>
+
+        <div class="card input-card">
+          <div class="card-header">
+            <i class="fas fa-crosshairs"></i> <span>JOB DESCRIPTION</span>
+          </div>
+          <textarea id="jdText" placeholder="Paste JD here..." aria-label="Paste Job Description Here"></textarea>
+        </div>
+      </div>
+
+      <div class="action-container">
+        <button onclick="analyzeProfile()" id="analyzeBtn" class="analyze-btn">
+          <span class="btn-content"
+            >RUN ANALYSIS <i class="fas fa-bolt"></i
+          ></span>
+        </button>
+      </div>
+
+      <div id="loading" class="hidden">
+        <div class="loader">
+          <div class="scanner"></div>
+        </div>
+        <p class="loading-text">CALCULATING...</p>
+      </div>
+
+      <div id="results" class="hidden">
+        <div class="score-card card">
+          <div class="score-header">MATCH SCORE</div>
+          <div class="progress-container">
+            <svg class="progress-ring" width="200" height="200">
+              <circle
+                class="progress-ring__circle-bg"
+                stroke="rgba(255,255,255,0.1)"
+                stroke-width="12"
+                fill="transparent"
+                r="90"
+                cx="100"
+                cy="100"
+              />
+              <circle
+                class="progress-ring__circle"
+                id="progressCircle"
+                stroke="#00f2ea"
+                stroke-width="12"
+                fill="transparent"
+                r="90"
+                cx="100"
+                cy="100"
+              />
+            </svg>
+            <div class="score-text">
+              <span id="score">0</span><span class="percent">%</span>
+            </div>
+          </div>
+          <p id="summary" class="summary-text"></p>
+        </div>
+
+        <div class="grid-container">
+          <div class="result-box warning">
+            <div class="box-header">MISSING SKILLS</div>
+            <ul id="missingSkills"></ul>
+          </div>
+          <div class="result-box info">
+            <div class="box-header">PROJECT IDEAS</div>
+            <ul id="projects"></ul>
+          </div>
+          <div class="result-box success">
+            <div class="box-header">RESUME TIPS</div>
+            <ul id="tips"></ul>
+          </div>
+          <div class="result-box bonus">
+            <div class="box-header">TOP ROLES</div>
+            <ul id="highFitRoles"></ul>
+          </div>
+        </div>
+
+        <div class="interview-section">
+          <h2 class="section-title">
+            <i class="fas fa-brain"></i> INTERVIEW PREP
+          </h2>
+          <div class="questions-grid" id="interviewQuestions"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Same JS logic as before
+      document.getElementById('resumeFile').addEventListener('change', function () {
+          document.getElementById('fileName').textContent = this.files[0].name;
+          document.getElementById('fileName').classList.add('active');
+      });
+
+      const circle = document.getElementById('progressCircle');
+      const radius = circle.r.baseVal.value;
+      const circumference = radius * 2 * Math.PI;
+      circle.style.strokeDasharray = `${circumference} ${circumference}`;
+      circle.style.strokeDashoffset = circumference;
+
+      function setProgress(percent) {
+          const offset = circumference - (percent / 100) * circumference;
+          circle.style.strokeDashoffset = offset;
+      }
+
+      async function analyzeProfile() {
+          const fileInput = document.getElementById('resumeFile');
+          const jdText = document.getElementById('jdText').value;
+          const btn = document.getElementById('analyzeBtn');
+          const loading = document.getElementById('loading');
+          const results = document.getElementById('results');
+
+          if (fileInput.files.length === 0) return alert("Upload Resume!");
+          if (!jdText.trim()) return alert("Paste JD!");
+
+          btn.disabled = true;
+          loading.classList.remove('hidden');
+          results.classList.add('hidden');
+          setProgress(0);
+
+          const formData = new FormData();
+          formData.append('resume', fileInput.files[0]);
+          formData.append('jd_text', jdText);
+
+          try {
+              const response = await fetch('/analyze', { method: 'POST', body: formData });
+              const data = await response.json();
+
+              if (data.error) throw new Error(data.error);
+
+              loading.classList.add('hidden');
+              results.classList.remove('hidden');
+
+              animateScore(data.match_score);
+              document.getElementById('summary').textContent = data.summary;
+
+              populateList('missingSkills', data.missing_skills);
+              populateList('projects', data.recommended_projects);
+              populateList('tips', data.resume_tips);
+              populateList('highFitRoles', data.high_match_roles);
+
+              const qContainer = document.getElementById('interviewQuestions');
+              qContainer.innerHTML = "";
+              data.interview_questions.forEach((q, index) => {
+                  const div = document.createElement('div');
+                  div.className = 'question-card';
+                  div.innerHTML = `<div class="q-badge">Q${index + 1}</div><p>${q}</p>`;
+                  qContainer.appendChild(div);
+              });
+
+          } catch (err) {
+              alert("Error: " + err.message);
+              loading.classList.add('hidden');
+          } finally {
+              btn.disabled = false;
+          }
+      }
+
+      function populateList(id, items) {
+          const list = document.getElementById(id);
+          list.innerHTML = "";
+          if (!items || items.length === 0) { list.innerHTML = "<li>None</li>"; return; }
+          items.forEach(item => {
+              const li = document.createElement('li');
+              li.innerText = item;
+              list.appendChild(li);
+          });
+      }
+
+      function animateScore(target) {
+          let current = 0;
+          const timer = setInterval(() => {
+              current += 1;
+              if (current >= target) { current = target; clearInterval(timer); }
+              document.getElementById('score').textContent = current;
+              setProgress(current);
+              let color = current > 80 ? "#00f2ea" : current > 50 ? "#ffbd2e" : "#ff0050";
+              document.getElementById('progressCircle').style.stroke = color;
+              document.getElementById('score').style.color = color;
+          }, 20);
+      }
+    </script>
+  </body>
+</html>
